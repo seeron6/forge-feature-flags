@@ -1,0 +1,21 @@
+{
+  "forge_version": "1",
+  "slug": "feature-flags-canonical",
+  "category": "release",
+  "name": "Feature Flags",
+  "description": "Boolean and JSON-valued flags with cohort targeting, percentage rollouts, instant kill switches, and an experiment harness that records assignment + outcome.",
+  "parent_id": null,
+  "is_base": true,
+  "stack": {
+    "language": "go",
+    "framework": "redis",
+    "runtime": "go"
+  },
+  "connectors": [
+    "boolean",
+    "json",
+    "rollout",
+    "kill"
+  ],
+  "config_schema_version": "1.0.0"
+}
