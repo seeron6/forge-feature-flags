@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>forge-feature-flags · preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+<style>
+  :root {
+    --bg: #0a0a0a; --bg-1: #111; --bg-2: #161616; --line: #242424; --line-2: #2e2e2e;
+    --ink: #f5f5f4; --ink-2: #d4d4d4; --ink-3: #a3a3a3; --ink-4: #737373;
+    --forge: #ff6b1f; --acid: #b6ff3d; --steel: #6ea8ff; --ember: #ffb547; --rust: #c44a2a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Geist', system-ui, sans-serif; font-size: 13.5px; line-height: 1.5; height: 100%; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+  .frame { display: grid; grid-template-rows: 36px 1fr; height: 100%; }
+  .titlebar { display: flex; align-items: center; gap: 8px; padding: 0 14px;
+    border-bottom: 1px solid var(--line); background: var(--bg-1);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-4); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3a3a; }
+  .dot.live { background: var(--forge); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  .panel { padding: 18px 22px; overflow: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 2px 6px;
+    border-radius: 4px; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--ink-2); }
+  .badge-acid { color: var(--acid); border-color: rgba(182,255,61,.3); background: rgba(182,255,61,.08); }
+  .badge-rust { color: #e57b5f; border-color: rgba(196,74,42,.4); background: rgba(196,74,42,.08); }
+  .badge-steel { color: var(--steel); border-color: rgba(110,168,255,.3); background: rgba(110,168,255,.08); }
+  .btn { display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 6px 11px;
+    border: 1px solid var(--line-2); background: var(--bg-1); border-radius: 6px; color: var(--ink); }
+  .btn:hover { background: var(--bg-2); border-color: #3a3a3a; }
+  .btn-primary { background: var(--forge); border-color: var(--forge); color: #0a0a0a; font-weight: 500; }
+  .btn-primary:hover { background: #ff8a3d; }
+  .row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 14px; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); }
+  input[type="text"], input[type="email"], input[type="search"], select, textarea {
+    background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 6px;
+    color: var(--ink); padding: 7px 10px; font: inherit; outline: 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  }
+  input:focus { border-color: var(--forge); }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="titlebar">
+    <span class="dot live"></span>
+    <span>forge-feature-flags</span>
+    <span style="margin-left:auto">propagation · <span class="mono" id="prop" style="color:var(--ink-2)">—</span></span>
+  </div>
+  <div class="panel" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div>
+      <div class="eyebrow" style="margin-bottom:14px">Flags</div>
+      <div id="flags" style="border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <aside>
+      <div class="eyebrow" style="margin-bottom:14px">Per-user evaluation</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;margin-bottom:14px;align-items:center">
+        <span class="mono" style="color:var(--ink-3);font-size:11px">user_id</span>
+        <input id="uid" type="text" value="user_19" />
+      </div>
+      <div id="evals" style="border:1px solid var(--line);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px"></div>
+    </aside>
+  </div>
+</div>
+<script>
+  const flags = [
+    { key:'newCheckout',     enabled:true,  rolloutPct: 25 },
+    { key:'darkMode',        enabled:true,  rolloutPct: 100 },
+    { key:'experimentalAI',  enabled:true,  rolloutPct: 5  },
+    { key:'killSwitch.legacyEmails', enabled:false, rolloutPct: 0 },
+  ];
+  async function sha1(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-1',b);return new Uint8Array(h);}
+  async function bucket(key, uid){const b=await sha1(key+':'+uid);return ((b[0]<<24)|(b[1]<<16)|(b[2]<<8)|b[3]>>>0)%100;}
+  function render(){
+    document.getElementById('flags').innerHTML = flags.map((f,i) => `
+      <div class="row">
+        <span><span class="mono" style="color:var(--ink)">${f.key}</span></span>
+        <span><input type="range" min="0" max="100" value="${f.rolloutPct}" data-i="${i}" style="width:140px"/> <span class="mono" style="color:var(--forge)">${f.rolloutPct}%</span></span>
+        <button class="btn btn-sm" data-toggle="${i}" style="${f.enabled?'background:var(--bg-2);border-color:var(--line-2)':'background:rgba(196,74,42,.08);border-color:rgba(196,74,42,.4);color:#e57b5f'}">${f.enabled?'enabled':'killed'}</button>
+      </div>`).join('');
+    document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', e => {
+      flags[+e.target.dataset.i].rolloutPct = +e.target.value;
+      const t = performance.now();
+      render();
+      evaluate();
+      document.getElementById('prop').innerHTML = `<span class="mono" style="color:var(--acid)">${(performance.now()-t).toFixed(1)}ms</span>`;
+    }));
+    document.querySelectorAll('button[data-toggle]').forEach(el => el.addEventListener('click', e => {
+      flags[+e.target.dataset.toggle].enabled = !flags[+e.target.dataset.toggle].enabled;
+      render(); evaluate();
+    }));
+  }
+  async function evaluate(){
+    const uid = document.getElementById('uid').value;
+    const out = await Promise.all(flags.map(async f => {
+      if (!f.enabled) return { key:f.key, value:'kill', color:'#e57b5f' };
+      const b = await bucket(f.key, uid);
+      const on = b < f.rolloutPct;
+      return { key:f.key, value: on?'true':'false', color: on?'var(--acid)':'var(--ink-4)' };
+    }));
+    document.getElementById('evals').innerHTML = out.map(e => `
+      <div class="row">
+        <span><span class="mono">${e.key}</span></span>
+        <span></span>
+        <span class="mono" style="color:${e.color}">${e.value}</span>
+      </div>`).join('');
+  }
+  document.getElementById('uid').addEventListener('input', evaluate);
+  render(); evaluate();
+</script>
+</body></html>
