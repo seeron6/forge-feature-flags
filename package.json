@@ -1,0 +1,19 @@
+{
+  "name": "@seeron6/forge-feature-flags",
+  "version": "0.1.0",
+  "description": "Targeted rollouts, kill switches, and experiment scaffolding.",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo 'no tests yet' && exit 0"
+  },
+  "keywords": [
+    "forge",
+    "framework",
+    "feature-flags",
+    "go",
+    "redis",
+    "postgres"
+  ],
+  "license": "MIT"
+}
