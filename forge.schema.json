@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "sections": [
+    {
+      "key": "features",
+      "label": "Feature toggles",
+      "fields": [
+        {
+          "key": "boolean.enabled",
+          "type": "boolean",
+          "label": "Enable Boolean flags",
+          "default": true
+        },
+        {
+          "key": "json.enabled",
+          "type": "boolean",
+          "label": "Enable JSON values",
+          "default": true
+        },
+        {
+          "key": "rollout.enabled",
+          "type": "boolean",
+          "label": "Enable % rollout",
+          "default": true
+        },
+        {
+          "key": "kill.enabled",
+          "type": "boolean",
+          "label": "Enable Kill switch",
+          "default": true
+        }
+      ]
+    },
+    {
+      "key": "theming",
+      "label": "Branding",
+      "fields": [
+        {
+          "key": "brand_name",
+          "type": "string",
+          "label": "Product name",
+          "default": ""
+        },
+        {
+          "key": "brand_color",
+          "type": "color",
+          "label": "Primary brand colour",
+          "default": "#ff6b1f"
+        }
+      ]
+    }
+  ]
+}
